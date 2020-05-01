@@ -1,61 +1,78 @@
 import tempfile
 from pathlib import Path
 import shutil
-from sync import sync, determine_actions
+from sync import sync, determine_actions, read_paths_and_hashes
+import pytest
 
+def create_files(files): 
+    source = tempfile.mkdtemp()
 
-class TestE2E:
+    for key in files.keys(): 
+        (Path(source) / key).write_text(files[key])
 
-    @staticmethod
-    def test_when_a_file_exists_in_the_source_but_not_the_destination():
-        try:
-            source = tempfile.mkdtemp()
-            dest = tempfile.mkdtemp()
+    return source
 
-            content = "I am a very useful file"
-            (Path(source) / 'my-file').write_text(content)
+def test_file_hash_is_found():
+    source = create_files({"my-file": "a handy file!"})
+    hashes = read_paths_and_hashes(source)
+    assert "my-file" in hashes.values()
 
-            sync(source, dest)
+    shutil.rmtree(source)
 
-            expected_path = Path(dest) /  'my-file'
-            assert expected_path.exists()
-            assert expected_path.read_text() == content
+def test_file_hashes_are_found(): 
+    
+    files = {  "file-1": "Some content!", 
+               "file-2" : "Other content"}
 
-        finally:
-            shutil.rmtree(source)
-            shutil.rmtree(dest)
+    source = create_files(files)
+    hashes = read_paths_and_hashes(source)
+    assert "file-1" in hashes.values()
+    assert "file-2" in hashes.values()
 
-    @staticmethod
-    def test_when_a_file_has_been_renamed_in_the_source():
-        try:
-            source = tempfile.mkdtemp()
-            dest = tempfile.mkdtemp()
-
-            content = "I am a file that was renamed"
-            source_path = Path(source) / 'source-filename'
-            old_dest_path = Path(dest) / 'dest-filename'
-            expected_dest_path = Path(dest) / 'source-filename'
-            source_path.write_text(content)
-            old_dest_path.write_text(content)
-
-            sync(source, dest)
-
-            assert old_dest_path.exists() is False
-            assert expected_dest_path.read_text() == content
-
-        finally:
-            shutil.rmtree(source)
-            shutil.rmtree(dest)
-
+    shutil.rmtree(source)
 
 def test_when_a_file_exists_in_the_source_but_not_the_destination():
-    src_hashes = {'hash1': 'fn1'}
-    dst_hashes = {}
-    actions = determine_actions(src_hashes, dst_hashes, Path('/src'), Path('/dst'))
-    assert list(actions) == [('copy', Path('/src/fn1'), Path('/dst/fn1'))]
+    source = create_files({"my-file": "a handy file!"})
+    dest = create_files({"another-file": "another handy file!"})
+
+    src_hashes = read_paths_and_hashes(source)
+    dest_hashes = read_paths_and_hashes(dest)
+    
+    actions = determine_actions(src_hashes, dest_hashes, source, dest)
+    expected = [
+        ('copy', Path(source + '/my-file'), Path(dest + '/my-file')),
+        ('delete', dest, 'another-file')
+    ]
+    assert list(actions) == expected
 
 def test_when_a_file_has_been_renamed_in_the_source():
-    src_hashes = {'hash1': 'fn1'}
-    dst_hashes = {'hash1': 'fn2'}
-    actions = determine_actions(src_hashes, dst_hashes, Path('/src'), Path('/dst'))
-    assert list(actions) == [('move', Path('/dst/fn2'), Path('/dst/fn1'))]
+    source = create_files({"my-file": "a handy file!"})
+    dest = create_files({"another-file": "a handy file!"})
+
+    src_hashes = read_paths_and_hashes(source)
+    dest_hashes = read_paths_and_hashes(dest)
+    
+    actions = determine_actions(src_hashes, dest_hashes, source, dest)
+    expected = [
+        ('move', Path(dest + '/another-file'), Path(dest + '/my-file'))
+    ]
+    assert list(actions) == expected
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # src_hashes = {'hash1': 'fn1'}
+    # dst_hashes = {'hash1': 'fn2'}
+    # actions = determine_actions(src_hashes, dst_hashes, Path('/src'), Path('/dst'))
+    # assert list(actions) == [('move', Path('/dst/fn2'), Path('/dst/fn1'))]

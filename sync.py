@@ -55,5 +55,5 @@ def determine_actions(src_hashes, dst_hashes, src_folder, dst_folder):
 
     for sha, filename in dst_hashes.items():
         if sha not in src_hashes:
-            yield 'delete', dst_folder / filename
+            yield 'delete', dst_folder, filename
 
