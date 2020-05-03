@@ -56,7 +56,7 @@ def test_deallocate():
     r = requests.post(f'{url}/allocate', json={
         'orderid': order1, 'sku': sku, 'qty': 100
     })
-    assert r.json()['batchid'] == batch
+    assert r.json()['batchref'] == batch
 
     # cannot allocate second order
     r = requests.post(f'{url}/allocate', json={
@@ -66,7 +66,7 @@ def test_deallocate():
 
     # deallocate
     r = requests.post(f'{url}/deallocate', json={
-        'orderid': order1, 'sku': sku,
+        'orderid': order1, 'sku': sku, 'qty': 100,
     })
     assert r.ok
 
@@ -75,5 +75,12 @@ def test_deallocate():
         'orderid': order2, 'sku': sku, 'qty': 100
     })
     assert r.ok
-    assert r.json()['batchid'] == batch
+    assert r.json()['batchref'] == batch
 
+def post_to_add_batch(ref, sku, qty, eta): 
+    url = config.get_api_url()
+    # add batch
+    r = requests.post(f'{url}/addbatch', json={
+        'ref': ref, 'sku': sku, 'qty': qty, 'eta': eta
+    })
+    return r.json()['batchref']
