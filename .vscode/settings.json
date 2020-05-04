@@ -1,9 +1,11 @@
 {
   "python.testing.pytestArgs": [
-    "tests"
+    "."
   ],
   "python.testing.unittestEnabled": false,
   "python.testing.nosetestsEnabled": false,
   "python.testing.pytestEnabled": true,
-  "python.pythonPath": "/Users/chris.perks/virtualenvs/arcpy/bin/python"
+  "python.pythonPath": "/Users/chris.perks/virtualenvs/arcpy/bin/python",
+  "python.linting.mypyEnabled": true,
+  "python.linting.enabled": true
 }
